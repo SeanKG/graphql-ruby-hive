@@ -34,7 +34,7 @@ module GraphQL
       end
 
       def add_operation(operation)
-        logger.debug("UsageReporter.add_operation: #{operation}")
+        logger.debug("UsageReporter.add_operation: #{op_details(operation)}")
         @queue.push(operation)
         logger.debug("UsageReporter.add_operation: queue size: #{@queue}")
         if @queue.size >= @options[:buffer_size] && !@thread.alive?
@@ -67,6 +67,13 @@ module GraphQL
         @options[:logger]
       end
 
+      def op_details(operation, verbose: false)
+        return operation if verbose
+
+        timestamp, _queries, _results, duration = operation
+        [timestamp, duration]
+      end
+
       def start_thread
         logger.debug('UsageReporter.start_thread')
         if @thread&.alive?
@@ -78,7 +85,7 @@ module GraphQL
           buffer = []
           logger.debug('UsageReporter.start_thread starting loop')
           while (operation = @queue.pop(false))
-            @options[:logger].debug("add operation to buffer: #{operation}")
+            @options[:logger].debug("add operation to buffer: #{op_details(operation)}")
             buffer << operation
             @options_mutex.synchronize do
               logger.debug("buffer size: #{buffer.size}")
