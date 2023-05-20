@@ -20,6 +20,7 @@ module GraphQL
       end
 
       def initialize(options, client)
+        logger.debug('UsageReporter.initialize')
         @@instance = self
 
         @options = options
@@ -29,24 +30,36 @@ module GraphQL
         @queue = Queue.new
 
         start_thread
+        logger.debug('UsageReporter.initialize done')
       end
 
       def add_operation(operation)
+        logger.debug("UsageReporter.add_operation: #{operation}")
         @queue.push(operation)
+        logger.debug('UsageReporter.add_operation done')
       end
 
       def on_exit
+        logger.debug('UsageReporter.on_exit')
         @queue.close
         @thread.join
+        logger.debug('UsageReporter.on_exit done')
       end
 
       def on_start
+        logger.debug('UsageReporter.on_start')
         start_thread
+        logger.debug('UsageReporter.on_start done')
       end
 
       private
 
+      def logger
+        @options[:logger]
+      end
+
       def start_thread
+        logger.debug('UsageReporter.start_thread')
         if @thread&.alive?
           @options[:logger].warn('Tried to start operations flushing thread but it was already alive')
           return
@@ -54,10 +67,12 @@ module GraphQL
 
         @thread = Thread.new do
           buffer = []
+          logger.debug('UsageReporter.start_thread thread started')
           while (operation = @queue.pop(false))
             @options[:logger].debug("add operation to buffer: #{operation}")
             buffer << operation
             @options_mutex.synchronize do
+              logger.debug("buffer size: #{buffer.size}")
               if buffer.size >= @options[:buffer_size]
                 @options[:logger].debug('buffer is full, sending!')
                 process_operations(buffer)
@@ -77,9 +92,11 @@ module GraphQL
 
           raise e
         end
+        logger.debug('UsageReporter.start_thread done')
       end
 
       def process_operations(operations)
+        logger.debug('UsageReporter.process_operations')
         report = {
           size: 0,
           map: {},
