@@ -36,11 +36,20 @@ module GraphQL
       def add_operation(operation)
         logger.debug("UsageReporter.add_operation: #{operation}")
         @queue.push(operation)
+        logger.debug("UsageReporter.add_operation: queue size: #{@queue}")
+        if @queue.size >= @options[:buffer_size] && !@thread.alive?
+          logger.debug('UsageReporter.add_operation: thread is dead, restarting')
+          start_thread
+        end
         logger.debug('UsageReporter.add_operation done')
       end
 
       def on_exit
         logger.debug('UsageReporter.on_exit')
+        unless @thread&.alive?
+          logger.debug('UsageReporter.on_exit: thread is dead, restarting to drain queue')
+          start_thread
+        end
         @queue.close
         @thread.join
         logger.debug('UsageReporter.on_exit done')
@@ -67,7 +76,7 @@ module GraphQL
 
         @thread = Thread.new do
           buffer = []
-          logger.debug('UsageReporter.start_thread thread started')
+          logger.debug('UsageReporter.start_thread starting loop')
           while (operation = @queue.pop(false))
             @options[:logger].debug("add operation to buffer: #{operation}")
             buffer << operation
