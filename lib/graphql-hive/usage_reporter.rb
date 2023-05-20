@@ -36,7 +36,7 @@ module GraphQL
       def add_operation(operation)
         logger.debug("UsageReporter.add_operation: #{op_details(operation)}")
         @queue.push(operation)
-        logger.debug("UsageReporter.add_operation: queue size: #{@queue}")
+        logger.debug("UsageReporter.add_operation: queue size: #{@queue.size}")
         if @queue.size >= @options[:buffer_size] && !@thread.alive?
           logger.debug('UsageReporter.add_operation: thread is dead, restarting')
           start_thread
