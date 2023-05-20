@@ -20,10 +20,10 @@ module GraphQL
       end
 
       def initialize(options, client)
-        logger.debug('UsageReporter.initialize')
         @@instance = self
 
         @options = options
+        logger.debug('UsageReporter.initialize')
         @client = client
 
         @options_mutex = Mutex.new
